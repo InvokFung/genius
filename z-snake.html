@@ -22,6 +22,15 @@ and open the template in the editor.
                 console.log("Copy right");
                 console.log("By Ellen");
                 console.log("==========");
+                var vw = window.innerWidth;
+                var vh = window.innerHeight;
+                $("#hint-title").css("font-size",(30 + vw/100)+"px");
+                $("#e-title").css("font-size",(18 + vw/100)+"px");
+                $("#e-title").css("line-height",(50 + vw/100)+"px");
+                $(".es-title").css("font-size",(13 + vw/70)+"px");
+                $(".es-option td").css("font-size",(10 + vw/80)+"px");
+                $("#e-scoreboard").css("font-size",(10 + vw/80)+"px");
+                
                 var width = $(document).width();
                 var height = $(document).height();
                 var swidth = Math.floor(width * 0.95 / 10)*10;
@@ -444,9 +453,6 @@ and open the template in the editor.
                 width: 100%;
                 text-align: center;
             }
-            #hint-title{                
-                font-size: calc(30px + 1vw);
-            }
             #options-wrapper{
                 width: 100%;
                 table-layout: fixed;
@@ -511,9 +517,7 @@ and open the template in the editor.
                 font-weight: bold;
                 font-family: monospace, emoji;
                 color: rgb(245,245,245);
-                font-size: calc(18px + 1vw);
                 text-align: center;
-                line-height: calc(50px + 1vw);
             }
             #e-content{
                 position: absolute;
@@ -531,7 +535,6 @@ and open the template in the editor.
             }
             .es-title{
                 font-weight: bold;
-                font-size: calc(13px + 0.7vw);
                 line-height: 35px;
                 border-bottom: 1px solid gray;
             }
@@ -542,7 +545,6 @@ and open the template in the editor.
                 height: 30px;
             }
             .es-option td{
-                font-size: calc(10px + 0.8vw);
                 width: 30%;
             }
             #e-scoreboard{
@@ -552,7 +554,6 @@ and open the template in the editor.
                 justify-content: center;
                 line-height: 35px;
                 font-weight: bold;
-                font-size: calc(10px + 0.8vw);
             }
             #e-score{  
                 margin-left: 5px;
