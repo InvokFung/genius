@@ -18,6 +18,10 @@ and open the template in the editor.
         <script src="swipe.js"></script>
         <script>
             $(document).ready(function(){
+                console.log("==========");
+                console.log("Copy right");
+                console.log("By Ellen");
+                console.log("==========");
                 var width = $(document).width();
                 var height = $(document).height();
                 var swidth = Math.floor(width * 0.95 / 10)*10;
@@ -160,7 +164,7 @@ and open the template in the editor.
                     started = 0;
                     clearInterval(gameinterval);
                     $("#screen").append(
-                        "<div id='ending-wrapper'>"+
+                        "<div class='ending-wrapper'>"+
                             "<div id='e-title'>Z-Snake</div>"+
                             "<div id='e-content'>"+
                                 "<div id='e-setting'>"+
@@ -195,7 +199,6 @@ and open the template in the editor.
                     
                     if (gamerule.border){
                         if (x < 1 || x > maxx || y < 1 || y > maxy){
-                            console.log("hit border");
                             endgame();
                             return;
                         }
@@ -227,7 +230,6 @@ and open the template in the editor.
                             point = true;
                         }
                         if ($("#b"+x+"-"+y).children().attr("class") == "psnake"){
-                            console.log("hit yourself");
                             endgame();
                             return;
                         }
@@ -316,7 +318,7 @@ and open the template in the editor.
                 })
                 
                 $("#screen").on("click","#e-restart",function(){
-                    $("#ending-wrapper").remove();
+                    $(".ending-wrapper").remove();
                     $(".block").children().remove();
                     drand = Math.floor(Math.random() * 3);
                     if (drand == 0) dpath = "left";
@@ -376,6 +378,16 @@ and open the template in the editor.
                 $("#sw-border").change(function(){
                     if (gamerule.border) gamerule.border = false;
                     else gamerule.border = true;
+                })
+                $("#screen").on("click","#e-share",function(){
+                    var $temp = $("<input>");
+                    $("body").append($temp);
+                    var link = window.location.href;                    
+                    var msg = "I just scored "+score+" on Z-snake! Try it out and see who has the highest score :) "+link;
+                    $temp.val(msg).select();
+                    document.execCommand("copy");
+                    $temp.remove();
+                    alert("Link Copied!\nShare it to your friends and see who has the highest score :)");
                 })
             });
         </script>
@@ -481,7 +493,7 @@ and open the template in the editor.
             #score{
                 margin-left: 5px;
             }
-            #ending-wrapper{
+            .ending-wrapper{
                 position: absolute;
                 top: 50%;
                 left: 50%;
@@ -589,7 +601,7 @@ and open the template in the editor.
                 #hint-title{                
                     font-size: 25px;
                 }
-                #ending-wrapper{
+                .ending-wrapper{
                     width: 75%;
                     aspect-ratio: 1/1.1;
                     max-width: 800px;
