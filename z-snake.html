@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>Z-snake</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.css">
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script src="https://kit.fontawesome.com/c371aa1582.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <script src="https://code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.js"></script>        
+        <script src="swipe.js"></script>
+        <script>
+            $(document).ready(function(){
+                var width = $(document).width();
+                var height = $(document).height();
+                var swidth = Math.floor(width * 0.95 / 10)*10;
+                if (swidth/10%2 == 0) swidth-=10;
+                var sheight = Math.floor(height * 0.95 / 10)*10;
+                if (sheight/10%2 == 0) sheight-=10;
+                
+                //console.log(swidth+" "+sheight);
+                
+                $("#screen").css("width",swidth);
+                $("#screen").css("height",sheight);
+                
+                var maxx = swidth/10;
+                var maxy = sheight/10;                                
+                
+                var gameinterval;
+                var started = 0;
+                var score = 0;                
+                var gamerule = {
+                    mode: "Standard",  //easy, standard, challenge(line-border), hardcore(curve-border)
+                    speed: 1,          //0.25, 0.5, 1, 1.5, 2
+                    border: true     //true, false
+                }
+                
+                var drand = Math.floor(Math.random() * 3);
+                var dpath;
+                if (drand == 0) dpath = "left";
+                else if (drand == 1) dpath = "up";
+                else dpath = "right";
+                
+                var pspos = [];
+                var fruit = [];
+                var frand;
+                
+                $("#screen").hide();
+                
+                function show_begin(){
+                    $("#screen").hide().fadeIn("slow",function(){
+                        $("#start-hint").css("display","flex").hide().fadeIn("slow",function(){                            
+                            $("#screen").append("<div id='start-cover'></div>");
+                        });                        
+                    })
+                }
+                
+                //generating blocks
+                for (var i=1;i<=maxy;i++){
+                    for (var j=1;j<=maxx;j++){
+                        $("#screen").append("<div class='block' id='b"+j+"-"+i+"'></div>");
+                    }
+                    if (i == maxy){
+                        show_begin();
+                    }
+                }
+                
+                $("#start-hint").click(function(e){
+                    if ($(e.target).is("#options-wrapper *")) return;
+                    if ($("#start-cover").length)
+                        $("#start-cover").click();
+                })
+                
+                function generatefruit(){
+                    //generate fruit
+                    var number = Math.pow(swidth,2/5);
+                    if (gamerule.mode != "Easy")
+                        number = Math.pow(swidth,3/5);
+                    for (var i=1;i<=Math.floor(number);i++){
+                        frand = Math.floor(Math.random() * maxx + 1);
+                        var fx = frand;
+                        frand = Math.floor(Math.random() * maxy + 1);
+                        var fy = frand;
+
+                        var repeated = false;
+                        for (var j=0;j<fruit.length;j++){
+                            if (fruit[j].xpos == fx || fruit[j].ypos == fy){
+                                repeated = true;
+                                break;
+                            }
+                        }
+                        if (repeated) {
+                            i--;
+                            continue;
+                        }
+                        
+                        //safe zone 4 blocks from center
+                        if (fx >= Math.round(maxx/2)-4 && fx <= (Math.round(maxy/2)+4)){
+                            if (fy >= Math.round(maxy/2)-4 && fy <= (Math.round(maxy/2)+4)){
+                                i--;
+                                continue;
+                            }
+                        }
+                        $("<div class='fruit' id='"+i+"'></div>").appendTo("#b"+fx+"-"+fy);
+                        fruit.push({
+                            index: i,
+                            xpos: fx,
+                            ypos: fy
+                        })
+                    }
+                }
+                
+                $("#screen").on("click","#start-cover",function(){
+                    if (gamerule.mode == "Challenge" || gamerule.mode == "Hardcore"){
+                        alert("Function incomplete, please try another mode.\nAlan is working on it.");
+                        return;
+                    }
+                    if (!started){
+                        $("#start-cover").remove();
+                        $("#start-hint").css("display","none");
+                        
+                        generatefruit();
+
+                        $("#b"+Math.round(maxx/2)+"-"+Math.round(maxy/2)).append("<div class='psnake' id='ps1'></div>");
+                        $("#b"+Math.round(maxx/2)+"-"+(Math.round(maxy/2)+1)).append("<div class='psnake' id='ps2'></div>");
+                        $("#b"+Math.round(maxx/2)+"-"+(Math.round(maxy/2)+2)).append("<div class='psnake' id='ps3'></div>");
+                        pspos = [{
+                            index: 1,
+                            xpos: Math.round(maxx/2),
+                            ypos: Math.round(maxy/2)
+                        },{
+                            index: 2,
+                            xpos: Math.round(maxx/2),
+                            ypos: Math.round(maxy/2)+1
+                        },{
+                            index: 3,
+                            xpos: Math.round(maxx/2),
+                            ypos: Math.round(maxy/2)+2
+                        }]
+                        started = 1;     
+                        var mvspeed = 100;
+                        if (gamerule.speed < 1)
+                            mvspeed = 100+80*(gamerule.speed+1);
+                        else if (gamerule.speed > 1)
+                            mvspeed = 100-80*(gamerule.speed-1);
+                        gameinterval = setInterval(function(){
+                            move(dpath);
+                        },mvspeed)
+                    }
+                })
+                
+                function endgame(){
+                    started = 0;
+                    clearInterval(gameinterval);
+                    $("#screen").append(
+                        "<div id='ending-wrapper'>"+
+                            "<div id='e-title'>Z-Snake</div>"+
+                            "<div id='e-content'>"+
+                                "<div id='e-setting'>"+
+                                    "<div class='es-title'>Game Setting</div>"+
+                                    "<table class='es-option'>"+
+                                    "<tr><td><strong>Mode</strong></td>"+
+                                    "<td><font>"+gamerule.mode+"</font></td></tr>"+
+                                    "<tr><td><strong>Speed</strong></td>"+
+                                    "<td><font>"+gamerule.speed+"x</font></td></tr>"+
+                                    "<tr><td><strong>Border</strong></td>"+
+                                    "<td><font>"+gamerule.border+"</font></td></tr>"+
+                                    "</table>"+
+                                "</div>"+
+                                "<div id='e-scoreboard'>Your Score: "+
+                                    "<div id='e-score'>"+score+"</div>"+
+                                "</div>"+
+                            "</div>"+
+                            "<div id='e-restart'>New game<i class='fas fa-retweet'></i></div>"+
+                            "<div id='e-share'>Share<i class='fas fa-share-square'></i></div>"+
+                        "</div>"
+                    )
+                }
+                
+                //movement
+                function move(direction){
+                    var x = pspos[0].xpos;
+                    var y = pspos[0].ypos;
+                    if (direction == "left") x-=1;
+                    if (direction == "up") y-=1;
+                    if (direction == "right") x+=1;
+                    if (direction == "down") y+=1;
+                    
+                    if (gamerule.border){
+                        if (x < 1 || x > maxx || y < 1 || y > maxy){
+                            console.log("hit border");
+                            endgame();
+                            return;
+                        }
+                    }else{
+                        if (x < 1) x = maxx;
+                        else if (x > maxx) x = 1;
+                        if (y < 1) y = maxy;
+                        else if (y > maxy) y = 1;
+                    }
+                    
+                    var point = false;
+                    if ($("#b"+x+"-"+y).children().length){
+                        if (fruit.filter(fruit => fruit.xpos == x && fruit.ypos == y).length){
+                            var getfruit = fruit.findIndex(fruit => fruit.xpos == x && fruit.ypos == y);                            
+                            fruit.splice(getfruit,1);
+                            $("#b"+x+"-"+y+" .fruit").remove();
+                            if (fruit.length == 0)
+                                generatefruit();
+                            
+                            if (gamerule.mode == "Easy")
+                                score += 50;
+                            else if (gamerule.mode == "Standard")
+                                score += 100;
+                            else if (gamerule.mode == "Challenge")
+                                score += 200;
+                            else if (gamerule.mode == "Hardcore")
+                                score += 300;
+                            $("#score").text(score);
+                            point = true;
+                        }
+                        if ($("#b"+x+"-"+y).children().attr("class") == "psnake"){
+                            console.log("hit yourself");
+                            endgame();
+                            return;
+                        }
+                    }                    
+                    
+                    var tmpx = pspos[pspos.length-1].xpos;
+                    var tmpy = pspos[pspos.length-1].ypos;
+                    
+                    for (var i=pspos.length-1;i>=1;i--){
+                        pspos[i].xpos = pspos[i-1].xpos;
+                        pspos[i].ypos = pspos[i-1].ypos;
+                    }
+                    
+                    if (point){
+                        pspos.push({
+                            index: pspos.length+1,
+                            xpos: tmpx,
+                            ypos: tmpy
+                        })
+                    }
+                    
+                    pspos[0].xpos = x;
+                    pspos[0].ypos = y;
+                    $("#ps1").appendTo("#b"+x+"-"+y);
+                    
+                    for (var i=1;i<pspos.length;i++){
+                        $("#ps"+pspos[i].index).appendTo("#b"+pspos[i].xpos+"-"+pspos[i].ypos);
+                    }
+                    if (point){
+                        $("#b"+tmpx+"-"+tmpy).append("<div class='psnake' id='ps"+pspos.length+"'></div>");
+                    }
+                    
+                    clearInterval(gameinterval);
+                    var mvspeed = 100;
+                    if (gamerule.speed < 1)
+                        mvspeed = 100+80*(gamerule.speed+1);
+                    else if (gamerule.speed > 1)
+                        mvspeed = 100-80*(gamerule.speed-1);
+                    gameinterval = setInterval(function(){
+                        move(dpath);
+                    },mvspeed)
+                }
+                
+                $(document).keydown(function(e){
+                    var key = (e.keyCode || e.which);                    
+                    if (!started){
+                        if (key == 13 || key == 32){
+                            if ($("#start-cover").length) $("#start-cover").click();
+                        }
+                        return;
+                    }
+                    if (key == 37 || key == 65){
+                        if (dpath == "left" || dpath == "right") return;
+                        dpath = "left";
+                    }else if (key == 38 || key == 87){
+                        if (dpath == "up" || dpath == "down") return;
+                        dpath = "up";
+                    }else if (key == 39 || key == 68){
+                        if (dpath == "right" || dpath == "left") return;
+                        dpath = "right";
+                    }else if (key == 40 || key == 83){
+                        if (dpath == "down" || dpath == "up") return;
+                        dpath = "down";
+                    }
+                    move(dpath);
+                })
+                $(document).on("swipeleft",function(){
+                    if (dpath == "left" || dpath == "right") return;
+                    dpath = "left";
+                    move(dpath);
+                })
+                $(document).on("swiperight",function(){
+                    if (dpath == "right" || dpath == "left") return;
+                    dpath = "right";
+                    move(dpath);
+                })
+                $(document).on("swipeup",function(){
+                    if (dpath == "up" || dpath == "down") return;
+                    dpath = "up";
+                    move(dpath);
+                })
+                $(document).on("swipedown",function(){
+                    if (dpath == "down" || dpath == "up") return;
+                    dpath = "down";
+                    move(dpath);
+                })
+                
+                $("#screen").on("click","#e-restart",function(){
+                    $("#ending-wrapper").remove();
+                    $(".block").children().remove();
+                    drand = Math.floor(Math.random() * 3);
+                    if (drand == 0) dpath = "left";
+                    else if (drand == 1) dpath = "up";
+                    else dpath = "right";
+                    score = 0;
+                    $("#score").text(score);
+                    pspos = [];
+                    fruit = [];
+                    show_begin();
+                })
+                
+                $(".prev-btn").click(function(){
+                    var change = $(this).parent().attr("id");
+                    if (change == "op-speed"){
+                        if (gamerule.speed-0.25 >= 0.25){
+                            gamerule.speed -= 0.25;
+                            $("#sw-speed").text(gamerule.speed+"x");
+                        }
+                    }else if (change == "op-mode"){
+                        switch(gamerule.mode){
+                            case "Standard":
+                                gamerule.mode = "Easy";
+                                break;
+                            case "Challenge":
+                                gamerule.mode = "Standard";
+                                break;
+                            case "Hardcore":
+                                gamerule.mode = "Challenge";
+                                break;
+                        }
+                        $("#sw-mode").text(gamerule.mode);
+                    }
+                })
+                $(".next-btn").click(function(){
+                    var change = $(this).parent().attr("id");
+                    if (change == "op-speed"){
+                        if (gamerule.speed+0.25 <= 2){
+                            gamerule.speed += 0.25;
+                            $("#sw-speed").text(gamerule.speed+"x");
+                        }
+                    }else if (change == "op-mode"){
+                        switch(gamerule.mode){
+                            case "Easy":
+                                gamerule.mode = "Standard";
+                                break;
+                            case "Standard":
+                                gamerule.mode = "Challenge";
+                                break;
+                            case "Challenge":
+                                gamerule.mode = "Hardcore";
+                                break;                            
+                        }
+                        $("#sw-mode").text(gamerule.mode);
+                    }
+                })
+                $("#sw-border").change(function(){
+                    if (gamerule.border) gamerule.border = false;
+                    else gamerule.border = true;
+                })
+            });
+        </script>
+        <style>
+            html,body{
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                overscroll-behavior-y: contain;
+            }
+            #screen{
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%,-50%);
+                overflow: visible;
+            }
+            .block{
+                background-color: rgb(200,200,200);
+                width: 9px;
+                aspect-ratio: 1;
+                border: none;
+                margin: 0.5px;
+                float: left;
+                clear: none;
+                position: relative;
+            }
+            #start-hint{
+                border: 0.5px solid rgb(150,150,150);
+                width: 50%;
+                aspect-ratio: 1/0.7;
+                max-width: 360px;
+                max-height: 240px;
+                display: none;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+                user-select: none;
+                -moz-user-select: none;
+                -webkit-user-select: none;
+                -ms-user-select: none;
+                padding: 0.5px 10px;
+                background-color: rgb(200,200,200,0.5);
+                border-radius: 5px;
+                color: rgb(100,100,100);
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%,-50%);
+                z-index: 999;
+            }
+            #start-hint div{              
+                width: 100%;
+                text-align: center;
+            }
+            #hint-title{                
+                font-size: calc(30px + 1vw);
+            }
+            #options-wrapper{
+                width: 100%;
+                table-layout: fixed;
+                text-align: center;
+            }
+            .options{
+                margin-top: 5px;
+                display: flex;
+                justify-content: center;
+            }
+            .prev-btn{
+                margin-right: 6px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            .next-btn{
+                margin-left: 6px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            #start-cover{
+                position: absolute;
+                inset: 0;
+                z-index: 998;
+            }
+            .psnake{
+                background-color: black;
+                width: 100%;
+                height: 100%;
+            }
+            .fruit{
+                background-color: rgb(255,99,71);
+                width: 100%;
+                height: 100%;
+            }
+            #scoreboard{
+                border: 1px solid black;
+                width: max-content;
+                padding: 1px 3px;
+                position: absolute;
+                bottom: 0;
+                display: flex;
+            }
+            #score{
+                margin-left: 5px;
+            }
+            #ending-wrapper{
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%,-50%);
+                background-color: rgb(180,180,180);
+                width: 70%;
+                aspect-ratio: 1/0.7;
+                max-width: 700px;
+                max-height: 400px;
+                border: 0.5px solid gray;
+                -webkit-box-shadow: 4px 4px 11px 0px rgba(0,0,0,0.66); 
+                box-shadow: 4px 4px 11px 0px rgba(0,0,0,0.66);
+            }
+            #e-title{
+                font-weight: bold;
+                font-family: monospace, emoji;
+                color: rgb(245,245,245);
+                font-size: calc(18px + 1vw);
+                text-align: center;
+                line-height: calc(50px + 1vw);
+            }
+            #e-content{
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 100%;
+                transform: translate(-50%,-50%);
+            }
+            #e-setting{
+                color: rgb(100,100,100);
+                text-align: center;                
+                width: 70%;                
+                margin: 0 auto;
+                border-bottom: 1px solid gray;
+            }
+            .es-title{
+                font-weight: bold;
+                font-size: calc(13px + 0.7vw);
+                line-height: 35px;
+                border-bottom: 1px solid gray;
+            }
+            .es-option{
+                margin: 10px auto;
+            }
+            .es-option tr{
+                height: 30px;
+            }
+            .es-option td{
+                font-size: calc(10px + 0.8vw);
+                width: 30%;
+            }
+            #e-scoreboard{
+                margin-top: 15px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 35px;
+                font-weight: bold;
+                font-size: calc(10px + 0.8vw);
+            }
+            #e-score{  
+                margin-left: 5px;
+            }
+            #e-restart{
+                border: 0.5px solid gray;
+                border-radius: 2px;
+                width: max-content;
+                padding: 5px 7px;
+                cursor: pointer;
+                background-color: rgb(150,150,150);
+                color: rgb(245,245,245);
+                position: absolute;
+                left: 0;
+                bottom: 0;
+            }
+            #e-restart i{
+                margin-left: 6px;
+            }
+            #e-share{
+                border: 0.5px solid gray;
+                border-radius: 2px;
+                width: max-content;
+                padding: 5px 7px;
+                cursor: pointer;
+                background-color: rgb(150,150,150);
+                color: rgb(245,245,245);
+                position: absolute;
+                right: 0;
+                bottom: 0;
+            }
+            #e-share i{
+                margin-left: 6px;
+            }
+            @media only screen and (max-width: 600px) {
+                #screen{                    
+                    top: 35%;
+                    transform: translate(-50%,-35%);
+                }
+                #start-hint{
+                    width: 70%;
+                    aspect-ratio: 1/0.7;
+                    background-color: rgb(200,200,200,0.9);
+                    font-size: 15px;
+                }
+                #hint-title{                
+                    font-size: 25px;
+                }
+                #ending-wrapper{
+                    width: 75%;
+                    aspect-ratio: 1/1.1;
+                    max-width: 800px;
+                    max-height: 800px;
+                }
+                #e-restart,#e-share{
+                    font-size: 15px;
+                    font-weight: bold;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="screen">
+            <div id="start-hint">
+                <div id="hint-title">Press to start...</div>
+                <div>Or</div>
+                <div>Customize Game Setting</div>
+                <table id="options-wrapper">
+                    <tr>
+                        <td>Mode<div class="options" id="op-mode"><nav class="prev-btn"><i class="fas fa-caret-left"></i></nav><font id="sw-mode">Standard</font><nav class="next-btn"><i class="fas fa-caret-right"></i></nav></div></td>                    
+                        <td>Speed<div class="options" id="op-speed"><nav class="prev-btn"><i class="fas fa-caret-left"></i></nav><font id="sw-speed">1x</font><nav class="next-btn"><i class="fas fa-caret-right"></i></nav></div></td>
+                        <td>Border<div class="options" id="op-speed"><input type="checkbox" id="sw-border" checked></div></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div id="scoreboard">Score: <nav id="score">0</nav></div>
+    </body>
+</html>
