@@ -306,21 +306,25 @@ and open the template in the editor.
                     move(dpath);
                 })
                 $(document).on("swipeleft",function(){
+                    if (!started) return;
                     if (dpath == "left" || dpath == "right") return;
                     dpath = "left";
                     move(dpath);
                 })
                 $(document).on("swiperight",function(){
+                    if (!started) return;
                     if (dpath == "right" || dpath == "left") return;
                     dpath = "right";
                     move(dpath);
                 })
                 $(document).on("swipeup",function(){
+                    if (!started) return;
                     if (dpath == "up" || dpath == "down") return;
                     dpath = "up";
                     move(dpath);
                 })
                 $(document).on("swipedown",function(){
+                    if (!started) return;
                     if (dpath == "down" || dpath == "up") return;
                     dpath = "down";
                     move(dpath);
@@ -616,6 +620,7 @@ and open the template in the editor.
         </style>
     </head>
     <body>
+        <noscript>Your browser does not support JavaScript!</noscript>
         <div id="screen">
             <div id="start-hint">
                 <div id="hint-title">Press to start...</div>
